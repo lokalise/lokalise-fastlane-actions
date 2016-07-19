@@ -25,7 +25,7 @@ module Fastlane
           request_data["langs"] = languages.to_json
         end
 
-        uri = URI("https://lokali.se/api/project/export")
+        uri = URI("https://lokalise.co/api/project/export")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
 
@@ -40,7 +40,7 @@ module Fastlane
           Helper.log.info "Downloading localizations archive 📦".green
           FileUtils.mkdir_p("lokalisetmp")
           filePath = jsonResponse["bundle"]["file"]
-          uri = URI("https://lokali.se/#{filePath}")
+          uri = URI("https://lokalise.co/#{filePath}")
           zipRequest = Net::HTTP::Get.new(uri)
           response = http.request(zipRequest)
           if response.content_type == "application/zip" then

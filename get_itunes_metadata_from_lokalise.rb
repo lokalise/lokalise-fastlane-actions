@@ -22,7 +22,7 @@ module Fastlane
           request_data["langs"] = languages.to_json
         end
 
-        uri = URI("https://lokali.se/api/string/list")
+        uri = URI("https://lokalise.co/api/string/list")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
 
