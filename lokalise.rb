@@ -37,9 +37,9 @@ module Fastlane
 
 
         jsonResponse = JSON.parse(response.body)
-        raise "Bad response 🉐\n#{response.body}".red unless jsonResponse.kind_of? Hash
+        UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["response"]["status"] == "success" && jsonResponse["bundle"]["file"].kind_of?(String)  then
-          Helper.log.info "Downloading localizations archive 📦".green
+          UI.message "Downloading localizations archive 📦"
           FileUtils.mkdir_p("lokalisetmp")
           filePath = jsonResponse["bundle"]["file"]
           uri = URI("https://lokalise.co/#{filePath}")
@@ -52,16 +52,16 @@ module Fastlane
             }
             unzip_file("lokalisetmp/a.zip", destination, clean_destination)
             FileUtils.remove_dir("lokalisetmp")
-            Helper.log.info "Localizations extracted to #{destination} 📗 📕 📘".green
+            UI.success "Localizations extracted to #{destination} 📗 📕 📘"
           else
-            raise "Response did not include ZIP".red
+            UI.error "Response did not include ZIP"
           end
         elsif jsonResponse["response"]["status"] == "error"
           code = jsonResponse["response"]["code"]
           message = jsonResponse["response"]["message"]
-          raise "Response error code #{code} (#{message}) 📟".red
+          UI.error "Response error code #{code} (#{message}) 📟"
         else
-          raise "Bad response 🉐\n#{jsonResponse}".red
+          UI.error "Bad response 🉐\n#{jsonResponse}"
         end
       end
 
@@ -71,11 +71,11 @@ module Fastlane
         require 'rubygems'
         Zip::File.open(file) { |zip_file|
           if clean_destination then
-            Helper.log.info "Cleaning destination folder ♻️".green
+            UI.message "Cleaning destination folder ♻️"
             FileUtils.remove_dir(destination)
             FileUtils.mkdir_p(destination)
           end
-          Helper.log.info "Unarchiving localizations to destination 📚".green
+          UI.message "Unarchiving localizations to destination 📚"
            zip_file.each { |f|
              f_path= File.join(destination, f.name)
              FileUtils.mkdir_p(File.dirname(f_path))
@@ -100,19 +100,19 @@ module Fastlane
                                        env_name: "LOKALISE_API_TOKEN",
                                        description: "API Token for Lokalise",
                                        verify_block: proc do |value|
-                                          raise "No API token for Lokalise given, pass using `api_token: 'token'`".red unless (value and not value.empty?)
+                                          UI.user_error! "No API token for Lokalise given, pass using `api_token: 'token'`" unless (value and not value.empty?)
                                        end),
           FastlaneCore::ConfigItem.new(key: :project_identifier,
                                        env_name: "LOKALISE_PROJECT_ID",
                                        description: "Create a development certificate instead of a distribution one",
                                        verify_block: proc do |value|
-                                          raise "No Project Identifier for Lokalise given, pass using `project_identifier: 'identifier'`".red unless (value and not value.empty?)
+                                          UI.user_error! "No Project Identifier for Lokalise given, pass using `project_identifier: 'identifier'`" unless (value and not value.empty?)
                                        end),
           FastlaneCore::ConfigItem.new(key: :destination,
                                        description: "Localization destination",
                                        verify_block: proc do |value|
-                                          raise "Things are pretty bad".red unless (value and not value.empty?)
-                                          raise "Directory you passed is in your imagination".red unless File.directory?(value)
+                                          UI.user_error! "Things are pretty bad" unless (value and not value.empty?)
+                                          UI.user_error! "Directory you passed is in your imagination" unless File.directory?(value)
                                        end),
           FastlaneCore::ConfigItem.new(key: :clean_destination,
                                        description: "Clean destination folder",
@@ -120,14 +120,14 @@ module Fastlane
                                        is_string: false,
                                        default_value: false,
                                        verify_block: proc do |value|
-                                          raise "Clean destination should be true or false".red unless [true, false].include? value
+                                          UI.user_error! "Clean destination should be true or false" unless [true, false].include? value
                                        end),
           FastlaneCore::ConfigItem.new(key: :languages,
                                        description: "Languages to download",
                                        optional: true,
                                        is_string: false,
                                        verify_block: proc do |value|
-                                          raise "Language codes should be passed as array".red unless value.kind_of? Array
+                                          UI.user_error! "Language codes should be passed as array" unless value.kind_of? Array
                                        end),
 FastlaneCore::ConfigItem.new(key: :include_comments,
                              description: "Include comments in exported files",
@@ -135,7 +135,7 @@ FastlaneCore::ConfigItem.new(key: :include_comments,
                              is_string: false,
                              default_value: false,
                              verify_block: proc do |value|
-                             raise "Include comments should be true or false".red unless [true, false].include? value
+                             UI.user_error! "Include comments should be true or false" unless [true, false].include? value
                              end)
         ]
       end
