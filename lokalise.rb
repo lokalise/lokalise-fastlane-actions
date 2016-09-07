@@ -8,6 +8,7 @@ module Fastlane
         project_identifier = params[:project_identifier]
         destination = params[:destination]
         clean_destination = params[:clean_destination]
+        include_comments = params[:include_comments]
 
         request_data = {
           api_token: token,
@@ -17,7 +18,8 @@ module Fastlane
           bundle_filename: "Localization.zip",
           bundle_structure: "%LANG_ISO%.lproj/Localizable.%FORMAT%",
           ota_plugin_bundle: 0,
-          export_empty: "base"
+          export_empty: "base",
+          include_comments: include_comments
         }
 
         languages = params[:languages]
@@ -126,7 +128,15 @@ module Fastlane
                                        is_string: false,
                                        verify_block: proc do |value|
                                           raise "Language codes should be passed as array".red unless value.kind_of? Array
-                                       end)
+                                       end),
+FastlaneCore::ConfigItem.new(key: :include_comments,
+                             description: "Include comments in exported files",
+                             optional: true,
+                             is_string: false,
+                             default_value: false,
+                             verify_block: proc do |value|
+                             raise "Include comments should be true or false".red unless [true, false].include? value
+                             end)
         ]
       end
 
