@@ -42,10 +42,12 @@ module Fastlane
           UI.message "Downloading localizations archive 📦"
           FileUtils.mkdir_p("lokalisetmp")
           filePath = jsonResponse["bundle"]["file"]
-          uri = URI("https://lokalise.co/#{filePath}")
+          uri = URI("https://s3-eu-west-1.amazonaws.com/lokalise-assets/#{filePath}")
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
           zipRequest = Net::HTTP::Get.new(uri)
           response = http.request(zipRequest)
-          if response.content_type == "application/zip" then
+          if response.content_type == "application/zip" or response.content_type == "application/octet-stream" then
             FileUtils.mkdir_p("lokalisetmp")
             open("lokalisetmp/a.zip", "wb") { |file| 
               file.write(response.body)
