@@ -131,14 +131,14 @@ module Fastlane
                                        verify_block: proc do |value|
                                           UI.user_error! "Language codes should be passed as array" unless value.kind_of? Array
                                        end),
-FastlaneCore::ConfigItem.new(key: :include_comments,
-                             description: "Include comments in exported files",
-                             optional: true,
-                             is_string: false,
-                             default_value: false,
-                             verify_block: proc do |value|
-                             UI.user_error! "Include comments should be true or false" unless [true, false].include? value
-                             end)
+            FastlaneCore::ConfigItem.new(key: :include_comments,
+                                       description: "Include comments in exported files",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: false,
+                                       verify_block: proc do |value|
+                                         UI.user_error! "Include comments should be true or false" unless [true, false].include? value
+                                       end)
         ]
       end
 
