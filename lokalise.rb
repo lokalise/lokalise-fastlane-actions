@@ -9,12 +9,13 @@ module Fastlane
         destination = params[:destination]
         clean_destination = params[:clean_destination]
         include_comments = params[:include_comments]
+        use_original = params[:use_original]
 
         request_data = {
           api_token: token,
           id: project_identifier,
           type: "strings",
-          use_original: 0,
+          use_original: use_original,
           bundle_filename: "Localization.zip",
           bundle_structure: "%LANG_ISO%.lproj/Localizable.%FORMAT%",
           ota_plugin_bundle: 0,
@@ -138,7 +139,15 @@ module Fastlane
                                        default_value: false,
                                        verify_block: proc do |value|
                                          UI.user_error! "Include comments should be true or false" unless [true, false].include? value
-                                       end)
+                                       end),
+            FastlaneCore::ConfigItem.new(key: :use_original,
+                                       description: "Use original filenames/formats (bundle_structure parameter is ignored then)",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: 0,
+                                       verify_block: proc do |value|
+                                         UI.user_error! "Use original takes in 0 and 1 as values." unless [0, 1].include?(value)
+                                        end)
         ]
       end
 
