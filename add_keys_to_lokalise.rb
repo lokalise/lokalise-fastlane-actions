@@ -67,7 +67,7 @@ module Fastlane
                                        end),
           FastlaneCore::ConfigItem.new(key: :project_identifier,
                                        env_name: "LOKALISE_PROJECT_ID",
-                                       description: "Create a development certificate instead of a distribution one",
+                                       description: "Lokalise Project Identifier",
                                        is_string: true,
                                        verify_block: proc do |value|
                                           raise "No Project Identifier for Lokalise given, pass using `project_identifier: 'identifier'`".red unless (value and not value.empty?)

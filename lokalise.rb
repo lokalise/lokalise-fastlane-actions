@@ -144,9 +144,9 @@ module Fastlane
                                        description: "Use original filenames/formats (bundle_structure parameter is ignored then)",
                                        optional: true,
                                        is_string: false,
-                                       default_value: 0,
+                                       default_value: false,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Use original takes in 0 and 1 as values." unless [0, 1].include?(value)
+                                         UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
                                         end)
         ]
       end
