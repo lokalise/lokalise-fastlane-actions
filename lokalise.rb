@@ -8,8 +8,8 @@ module Fastlane
         project_identifier = params[:project_identifier]
         destination = params[:destination]
         clean_destination = params[:clean_destination]
-        include_comments = params[:include_comments]
-        use_original = params[:use_original]
+        include_comments = params[:include_comments] ? 1 : 0
+        use_original = params[:use_original] ? 1 : 0
 
         request_data = {
           api_token: token,
