@@ -8,24 +8,27 @@ module Fastlane
         action = params[:action]
 
         case action
-        when "update_itunes"
-          key_file = metadata_key_file()
-          metadata = get_metadata_from_lokalise()
-          run_deliver_action(metadata)
-        when "update_lokalise"
-          metadata = get_metadata()
-          add_languages = params[:add_languages]
-          override_translation = params[:override_translation]
-          if add_languages == true 
-            create_languages(metadata.keys)
-          end
-          if override_translation == true
-            upload_metadata(metadata) unless metadata.empty?
-          else
-            lokalise_metadata = get_metadata_from_lokalise()
-            filtered_metadata = filter_metadata(metadata, lokalise_metadata)
-            upload_metadata(filtered_metadata) unless filtered_metadata.empty?
-          end
+          when 'update_itunes'
+            metadata_key_file()
+            metadata = get_metadata_from_lokalise()
+            run_deliver_action(metadata)
+          when 'fetch_lokalise'
+            metadata_key_file()
+            get_metadata_from_lokalise()
+          when 'update_lokalise'
+            metadata = get_metadata()
+            add_languages = params[:add_languages]
+            override_translation = params[:override_translation]
+            if add_languages == true
+              create_languages(metadata.keys)
+            end
+            if override_translation == true
+              upload_metadata(metadata) unless metadata.empty?
+            else
+              lokalise_metadata = get_metadata_from_lokalise()
+              filtered_metadata = filter_metadata(metadata, lokalise_metadata)
+              upload_metadata(filtered_metadata) unless filtered_metadata.empty?
+            end
         end
 
       end
@@ -282,16 +285,20 @@ module Fastlane
         return name
       end
 
+      def self.supported_metadata_actions
+        %w(update_lokalise fetch_lokalise update_itunes)
+      end
+
       #####################################################
       # @!group Documentation
       #####################################################
 
       def self.description
-        "Upload metadata to lokalise."
+        'Upload metadata to lokalise.'
       end
 
       def self.details
-        "This action scans fastlane/metadata folder and uploads metadata to lokalise.co"
+        'This action scans fastlane/metadata folder and uploads metadata to lokalise.co'
       end
 
       def self.available_options
@@ -329,13 +336,13 @@ module Fastlane
                                        optional: false,
                                        is_string: true,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Action should be update_lokalise or update_itunes" unless ["update_lokalise", "update_itunes"].include? value
+                                         UI.user_error! "Action should be update_lokalise, fetch_lokalise or update_itunes" unless supported_metadata_actions.include? value
                                        end),
         ]
       end
 
       def self.authors
-        ["Fedya-L"]
+        ['Fedya-L']
       end
 
       def self.is_supported?(platform)
