@@ -183,6 +183,8 @@ module Fastlane
           keys: valid_keys.to_json,
         }
 
+        platform_string = Actions.lane_context[SharedValues::DEFAULT_PLATFORM].to_s
+
         response = make_request('string/list', data)
 
         metadata = {}
@@ -190,7 +192,7 @@ module Fastlane
           if valid_languages.include?(lang)
             translations = {}
             translation_objects.each { |object|
-              key = object['key_ios']
+              key = object["key_#{platform_string}"]
               translation = object['translation']
               if valid_keys.include?(key) && translation != nil && !translation.empty?
                 translations[key] = translation
