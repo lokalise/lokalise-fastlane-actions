@@ -275,11 +275,13 @@ module Fastlane
           name = "en" if name == "en_US"
           name = "de" if name == "de_DE"
           name = "es" if name == "es_ES"
+          name = "fr" if name == "fr_FR"
         else 
           name = name.gsub("_","-")
           name = "en-US" if name == "en"
           name = "de-DE" if name == "de"
           name = "es-ES" if name == "es"
+          name = "fr-FR" if name == "fr"
         end
         return name
       end
