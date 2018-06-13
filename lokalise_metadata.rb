@@ -94,7 +94,7 @@ module Fastlane
           id: @params[:project_identifier]
         }.merge(data)
 
-        uri = URI("https://lokalise.co/api/#{path}")
+        uri = URI("https://api.lokalise.co/api/#{path}")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
   

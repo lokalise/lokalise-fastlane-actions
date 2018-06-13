@@ -41,6 +41,3 @@ Parameters:
 - `platform_mask`. Platform mask to asign to keys *(1 is iOS, 2 is Android, 4 is Web and 16 is Other)*.
 - `keys`. Keys to add *(must be passed as array of strings)*.
 
-## get_itunes_metadata_from_lokalise
-
-Depreciated. Please use `lokalise_metadata`.
