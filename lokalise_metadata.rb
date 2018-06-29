@@ -8,26 +8,28 @@ module Fastlane
         action = params[:action]
 
         case action
-        when "update_itunes"
-          key_file = metadata_key_file()
-          metadata = get_metadata_from_lokalise()
-          run_deliver_action(metadata)
-        when "update_lokalise"
-          metadata = get_metadata()
-          add_languages = params[:add_languages]
-          override_translation = params[:override_translation]
-          if add_languages == true 
-            create_languages(metadata.keys)
-          end
-          if override_translation == true
-            upload_metadata(metadata) unless metadata.empty?
-          else
-            lokalise_metadata = get_metadata_from_lokalise()
-            filtered_metadata = filter_metadata(metadata, lokalise_metadata)
-            upload_metadata(filtered_metadata) unless filtered_metadata.empty?
-          end
+          when 'update_itunes'
+            metadata_key_file()
+            metadata = get_metadata_from_lokalise()
+            run_deliver_action(metadata)
+          when 'fetch_lokalise'
+            metadata_key_file()
+            get_metadata_from_lokalise()
+          when 'update_lokalise'
+            metadata = get_metadata()
+            add_languages = params[:add_languages]
+            override_translation = params[:override_translation]
+            if add_languages == true
+              create_languages(metadata.keys)
+            end
+            if override_translation == true
+              upload_metadata(metadata) unless metadata.empty?
+            else
+              lokalise_metadata = get_metadata_from_lokalise()
+              filtered_metadata = filter_metadata(metadata, lokalise_metadata)
+              upload_metadata(filtered_metadata) unless filtered_metadata.empty?
+            end
         end
-
       end
 
       def self.create_languages(languages)
@@ -154,7 +156,7 @@ module Fastlane
         end
       end
 
-      def self.get_metadata()
+      def self.get_metadata
         available_languages = itunes_connect_languages
         complete_metadata = {}
 
@@ -172,37 +174,39 @@ module Fastlane
         return complete_metadata
       end
 
-      def self.get_metadata_from_lokalise()
-
+      def self.get_metadata_from_lokalise
+        valid_languages = itunes_connect_languages_in_lokalise()
         valid_keys = metadata_keys()
+
         data = {
           platform_mask: 16,
           keys: valid_keys.to_json,
         }
 
-        response = make_request("string/list", data)
+        platform_string = Actions.lane_context[SharedValues::DEFAULT_PLATFORM].to_s
 
-        valid_languages = itunes_connect_languages_in_lokalise()        
+        response = make_request('string/list', data)
+
         metadata = {}
-
-        response["strings"].each { |lang, translation_objects|
+        response['strings'].each { |lang, translation_objects|
           if valid_languages.include?(lang)
             translations = {}
             translation_objects.each { |object|
-              key = object["key"]
-              translation = object["translation"]
-              if valid_keys.include?(key) && translation != nil && translation.empty? == false 
+              key = object["key_#{platform_string}"]
+              translation = object['translation']
+              if valid_keys.include?(key) && translation != nil && !translation.empty?
                 translations[key] = translation
+              else
+                UI.error("Key might be invalid: {#{key}}. Translation exist? #{translation != nil && !translation.empty?}")
+                UI.error("Available Keys #{object.keys}") if object.is_a?(Hash)
               end
             }
-            if translations.empty? == false
-              metadata[fix_language_name(lang)] = translations
-            end
+
+            metadata[fix_language_name(lang)] = translations unless translations.empty?
           end
         }
 
         return metadata
-
       end
 
       def self.populate_hash_key_from_file(hash, key, filepath)
@@ -286,16 +290,20 @@ module Fastlane
         return name
       end
 
+      def self.supported_metadata_actions
+        %w(update_lokalise fetch_lokalise update_itunes)
+      end
+
       #####################################################
       # @!group Documentation
       #####################################################
 
       def self.description
-        "Upload metadata to lokalise."
+        'Upload metadata to lokalise.'
       end
 
       def self.details
-        "This action scans fastlane/metadata folder and uploads metadata to lokalise.co"
+        'This action scans fastlane/metadata folder and uploads metadata to lokalise.co'
       end
 
       def self.available_options
@@ -333,13 +341,13 @@ module Fastlane
                                        optional: false,
                                        is_string: true,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Action should be update_lokalise or update_itunes" unless ["update_lokalise", "update_itunes"].include? value
+                                         UI.user_error! "Action should be update_lokalise, fetch_lokalise or update_itunes" unless supported_metadata_actions.include? value
                                        end),
         ]
       end
 
       def self.authors
-        ["Fedya-L"]
+        ['Fedya-L']
       end
 
       def self.is_supported?(platform)
