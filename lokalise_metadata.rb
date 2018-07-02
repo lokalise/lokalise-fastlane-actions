@@ -9,14 +9,14 @@ module Fastlane
 
         case action
         when "update_itunes"
-          key_file = metadata_key_file()
+          key_file = metadata_key_file_itunes()
           metadata = get_metadata_from_lokalise_itunes()
           run_deliver_action(metadata)
         when "update_googleplay"
           key_file = metadata_key_file_googleplay
           metadata = get_metadata_from_lokalise_googleplay()
           save_metadata_to_files(metadata, params[:releaseNumber])
-          run_supply_action()
+          run_supply_action(params[:validateOnly])
         when "update_lokalise_itunes"
           metadata = get_metadata_itunes_connect()
           add_languages = params[:add_languages]
@@ -87,7 +87,7 @@ module Fastlane
         config[:skip_app_version_update] = true
         config[:force] = true
 
-        metadata_key_file().each { |key, parameter|
+        metadata_key_file_itunes().each { |key, parameter|
           final_translations = {}
 
           metadata.each { |lang, translations|
@@ -104,13 +104,13 @@ module Fastlane
         Actions::DeliverAction.run(config)
       end
 
-      def self.run_supply_action()
+      def self.run_supply_action(validate_only)
         config = FastlaneCore::Configuration.create(Actions::SupplyAction.available_options, {})
         config[:skip_upload_apk] = true
         config[:skip_upload_aab] = true
         config[:skip_upload_screenshots] = true
         config[:skip_upload_images] = true
-        config[:validate_only] = true
+        config[:validate_only] = validate_only
 
         Actions::SupplyAction.run(config)
       end
@@ -274,7 +274,11 @@ module Fastlane
 
         response = make_request("string/list", data)
 
-        valid_languages = itunes_connect_languages_in_lokalise()        
+        if for_itunes
+          valid_languages = itunes_connect_languages_in_lokalise() 
+        else
+          valid_languages = google_play_languages_in_lokalise()        
+        end
         metadata = {}
 
         response["strings"].each { |lang, translation_objects|
@@ -288,11 +292,11 @@ module Fastlane
               end
             }
             if translations.empty? == false
+              #puts "#{lang} #{fix_language_name(lang, for_itunes)}"
               metadata[fix_language_name(lang, for_itunes)] = translations
             end
           end
         }
-
         return metadata
 
       end
@@ -351,101 +355,128 @@ module Fastlane
 
       def self.itunes_connect_languages_in_lokalise()
         return itunes_connect_languages().map { |lang| 
-          fix_language_name(lang, true) 
+          fix_language_name(lang, true, true) 
         }
       end
 
       def self.google_play_languages_in_lokalise()
         return google_play_languages().map { |lang| 
-          fix_language_name(lang, true) 
+          fix_language_name(lang, false, true) 
         }
       end
 
       def self.itunes_connect_languages()
         return [
-          "af",
-          "am",
-          "ar",
-          "hy-AM",
-          "az-AZ",
-          "bn-BD",
-          "eu-ES",
-          "be",
-          "bg",
-          "my-MM",
-          "ca",
-          "zh-HK",
-          "zh-CN",
-          "zh-TW",
-          "hr",
-          "cs-CZ",
-          "da-DK",
+          "en-US",
+          "zh-Hans",
+          "zh-Hant",
+          "da",
           "nl-NL",
           "en-AU",
-          "en-IN",
-          "en-SG",
-          "en-ZA",
           "en-CA",
           "en-GB",
-          "et",
-          "fil",
-          "fi-FI",
+          "fi",
           "fr-FR",
           "fr-CA",
-          "gl-ES",
-          "ka-GE",
           "de-DE",
-          "el-GR",
-          "iw-IL",
-          "hi-IN",
-          "hu-HU",
-          "is-IS",
+          "el",
           "id",
-          "it-IT",
-          "ja-JP",
-          "kn-IN",
-          "km-KH",
-          "ko-KR",
-          "ky-KG",
-          "lo-LA",
-          "lv",
-          "lt",
-          "mk-MK",
+          "it",
+          "ja",
+          "ko",
           "ms",
-          "ml-IN",
-          "mr-IN",
-          "mn-MN",
-          "ne-NP",
-          "no-NO",
-          "fa",
-          "pl-PL",
+          "no",
           "pt-BR",
           "pt-PT",
-          "ro",
-          "rm",
-          "ru-RU",
-          "sr",
-          "si-LK",
-          "sk",
-          "sl",
-          "es-419",
+          "ru",
+          "es-MX",
           "es-ES",
-          "es-US",
-          "sw",
-          "sv-SE",
-          "ta-IN",
-          "te-IN",
+          "sv",
           "th",
-          "tr-TR",
-          "uk",
-          "vi",
-          "zu"
+          "tr",
+          "vi"
         ]
       end
 
       def self.google_play_languages()
         return [
-          
+          'af',
+          'am',
+          'ar',
+          'hy',
+          'az-AZ',
+          'eu-ES',
+          'be',
+          'bn-BD',
+          'bg',
+          'my',
+          'ca',
+          'zh-CN',
+          'zh-TW',
+          'zh-HK',
+          'hr',
+          'cs',
+          'da',
+          'nl-NL',
+          'en-AU',
+          'en-CA',
+          'en-IN',
+          'en-SG',
+          'en-ZA',
+          'en-GB',
+          'en-US',
+          'et-EE',
+          'fil',
+          'fi',
+          'fr-CA',
+          'fr-FR',
+          'gl-ES',
+          'ka-GE',
+          'de-DE',
+          'el-GR',
+          'he',
+          'hi-IN',
+          'hu',
+          'is-IS',
+          'id',
+          'it-IT',
+          'ja',
+          'kn-IN',
+          'km-KH',
+          'ko',
+          'ky',
+          'lo',
+          'lv-LV',
+          'lt-LT',
+          'mk-MK',
+          'ms',
+          'ml-IN',
+          'mr',
+          'mn-MN',
+          'ne-NP',
+          'no',
+          'fa',
+          'pl',
+          'pt-BR',
+          'pt-PT',
+          'ro',
+          'ru-RU',
+          'sr',
+          'si',
+          'sk',
+          'sl-SI',
+          'es-419',
+          'es-ES',
+          'es-US',
+          'sw',
+          'sv-SE',
+          'ta-IN',
+          'te-IN',
+          'th',
+          'tr',
+          'uk',
+          'vi',
+          'zu'
         ]
       end
 
@@ -468,33 +499,35 @@ module Fastlane
           if for_lokalise
             name =  name.gsub("-","_")
             name = "tr" if name == "tr_TR"
-            name = "hy" if name == "hy-AM"
-            name = "my" if name == "my-MM"
-            name = "my" if name == "cs-CZ"
-            name = "da" if name == "da-DK"
-            name = "et" if name == "et_EE"
-            name = "fi" if name == "fi-FI"
-            name = "he" if name == "iw-IL"
-            name = "hu" if name == "hu-HU"
-            name = "ja" if name == "ja-JP"
-            name = "ko" if name == "ko-KR"
-            name = "ky" if name == "ky-KG"
-            name = "lo" if name == "lo-LA"
-            name = "lv" if name == "lv_LV"
-            name = "lt" if name == "lt_LT"
-            name = "mr" if name == "mr-IN"
-            name = "no" if name == "no-NO"
-            name = "pl" if name == "pl-PL"
-            name = "si" if name == "si-LK"
-            name = "sl" if name == "sl_SI"
+            name = "hy" if name == "hy_AM"
+            name = "my" if name == "my_MM"
+            name = "ms" if name == "ms_MY"
+            name = "cs" if name == "cs_CZ"
+            name = "da" if name == "da_DK"
+            name = "et_EE" if name == "et"
+            name = "fi" if name == "fi_FI"
+            name = "he" if name == "iw_IL"
+            name = "hu" if name == "hu_HU"
+            name = "ja" if name == "ja_JP"
+            name = "ko" if name == "ko_KR"
+            name = "ky" if name == "ky_KG"
+            name = "lo" if name == "lo_LA"
+            name = "lv_LV" if name == "lv"
+            name = "lt_LT" if name == "lt"
+            name = "mr" if name == "mr_IN"
+            name = "no" if name == "no_NO"
+            name = "pl" if name == "pl_PL"
+            name = "si" if name == "si_LK"
+            name = "sl_SI" if name == "sl"
           else 
             name = name.gsub("_","-")
             name = "tr-TR" if name == "tr"
             name = "hy-AM" if name == "hy"
             name = "my-MM" if name == "my"
+            name = "ms-MY" if name == "ms"
             name = "cs-CZ" if name == "cs"
             name = "da-DK" if name == "da"
-            name = "et_EE" if name == "et"
+            name = "et" if name == "et-EE"
             name = "fi-FI" if name == "fi"
             name = "iw-IL" if name == "he"
             name = "hu-HU" if name == "hu"
@@ -502,13 +535,13 @@ module Fastlane
             name = "ko-KR" if name == "ko"
             name = "ky-KG" if name == "ky"
             name = "lo-LA" if name == "lo"
-            name = "lv_LV" if name == "lv"
-            name = "lt_LT" if name == "lt"
+            name = "lv" if name == "lv-LV"
+            name = "lt" if name == "lt-LT"
             name = "mr-IN" if name == "mr"
             name = "no-NO" if name == "no"
             name = "pl-PL" if name == "pl"
             name = "si-LK" if name == "si"
-            name = "sl_SI" if name == "sl"
+            name = "sl" if name == "sl-SI"
           end
         end
         return name
@@ -567,6 +600,14 @@ module Fastlane
                                       description: "ReleaseNumber is required to update google play",
                                       optional: true,
                                       is_string: false),
+          FastlaneCore::ConfigItem.new(key: :validateOnly,
+                                      description: "Only validate the metadata",
+                                      optional: true,
+                                      is_string: false,
+                                      default_value: false,
+                                      verify_block: proc do |value|
+                                        UI.user_error! "Only valiudate should be true or false" unless [true, false].include? value
+                                      end),
         ]
       end
 
