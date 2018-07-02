@@ -12,12 +12,17 @@ module Fastlane
           key_file = metadata_key_file()
           metadata = get_metadata_from_lokalise_itunes()
           run_deliver_action(metadata)
+        when "update_googleplay"
+          key_file = metadata_key_file_googleplay
+          metadata = get_metadata_from_lokalise_googleplay()
+          save_metadata_to_files(metadata, params[:releaseNumber])
+          run_supply_action()
         when "update_lokalise_itunes"
           metadata = get_metadata_itunes_connect()
           add_languages = params[:add_languages]
           override_translation = params[:override_translation]
           if add_languages == true 
-            create_languages(metadata.keys)
+            create_languages(metadata.keys, true)
           end
           if override_translation == true
             upload_metadata_itunes(metadata) unless metadata.empty?
@@ -31,7 +36,7 @@ module Fastlane
           add_languages = params[:add_languages]
           override_translation = params[:override_translation]
           if add_languages == true 
-            create_languages(metadata.keys)
+            create_languages(metadata.keys, false)
           end
           if override_translation == true
             upload_metadata_google_play(metadata) unless metadata.empty?
@@ -43,9 +48,9 @@ module Fastlane
         end
       end
 
-      def self.create_languages(languages)
+      def self.create_languages(languages, for_itunes)
         data = {
-          iso: languages.map { |language| fix_language_name(language, true) } .to_json
+          iso: languages.map { |language| fix_language_name(language, for_itunes, true) } .to_json
         }
         make_request("language/add", data)
       end
@@ -88,7 +93,7 @@ module Fastlane
           metadata.each { |lang, translations|
             if translations.empty? == false
               translation = translations[key]
-              puts translation
+              #puts translation
               final_translations[lang] = translation if translation != nil && translation.empty? == false
             end 
           }
@@ -97,6 +102,50 @@ module Fastlane
         }
 
         Actions::DeliverAction.run(config)
+      end
+
+      def self.run_supply_action()
+        config = FastlaneCore::Configuration.create(Actions::SupplyAction.available_options, {})
+        config[:skip_upload_apk] = true
+        config[:skip_upload_aab] = true
+        config[:skip_upload_screenshots] = true
+        config[:skip_upload_images] = true
+        config[:validate_only] = true
+
+        Actions::SupplyAction.run(config)
+      end
+
+      def self.save_metadata_to_files(metadata, releaseNumber)
+
+        translations = {}
+
+        metadata_key_file_googleplay().each { |key, parameter|
+          final_translations = {}
+
+          metadata.each { |lang, translations|
+            if translations.empty? == false
+              translation = translations[key]
+              final_translations[lang] = translation if translation != nil && translation.empty? == false
+            end 
+          }
+
+          translations[parameter.to_sym] = final_translations
+        }
+
+        translations.each { |key, parameter|
+          parameter.each { |lang, text|
+            path = "fastlane/metadata/android/#{lang}/#{key}.txt"
+            if "#{key}" ==  "changelogs"
+              path = "fastlane/metadata/android/#{lang}/changelogs/#{releaseNumber}.txt"
+            end
+            dirname = File.dirname(path)
+            unless File.directory?(dirname)
+              FileUtils.mkdir_p(dirname)
+            end
+            File.write(path, text)
+          }
+        }
+
       end
 
       def self.make_request(path, data)
@@ -115,7 +164,7 @@ module Fastlane
         http.use_ssl = true
         response = http.request(request)
 
-        puts request_data
+        #puts request_data
         jsonResponse = JSON.parse(response.body)
         raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["response"]["status"] == "success"  then
@@ -149,14 +198,14 @@ module Fastlane
       end
 
       def self.upload_metadata_itunes(metadata)
-        upload_metadata(metadata_key_file_itunes, metadata)
+        upload_metadata(metadata_key_file_itunes, true, metadata)
       end
 
       def self.upload_metadata_google_play(metadata)
-        upload_metadata(metadata_key_file_googleplay, metadata)
+        upload_metadata(metadata_key_file_googleplay, false, metadata)
       end
 
-      def self.make_key_object_from_metadata(key, metadata)
+      def self.make_key_object_from_metadata(key, metadata, for_itunes)
         key_data = {
           "key" => key,
           "platform_mask" => 16,
@@ -165,7 +214,7 @@ module Fastlane
         metadata.each { |iso_code, data|
           translation = data[key]
           unless translation == nil || translation.empty?
-            key_data["translations"][fix_language_name(iso_code, true)] = translation
+            key_data["translations"][fix_language_name(iso_code, for_itunes, true)] = translation
           end
         }
         unless key_data["translations"].empty? 
@@ -216,7 +265,7 @@ module Fastlane
         return complete_metadata
       end
 
-      def self.get_metadata_from_lokalise(valid_keys)
+      def self.get_metadata_from_lokalise(valid_keys, for_itunes)
 
         data = {
           platform_mask: 16,
@@ -239,7 +288,7 @@ module Fastlane
               end
             }
             if translations.empty? == false
-              metadata[fix_language_name(lang)] = translations
+              metadata[fix_language_name(lang, for_itunes)] = translations
             end
           end
         }
@@ -251,14 +300,14 @@ module Fastlane
       def self.get_metadata_from_lokalise_itunes()
 
         valid_keys = metadata_keys_itunes()
-        return get_metadata_from_lokalise(valid_keys)
+        return get_metadata_from_lokalise(valid_keys, true)
 
       end
 
       def self.get_metadata_from_lokalise_googleplay()
 
         valid_keys = metadata_keys_googleplay()
-        return get_metadata_from_lokalise(valid_keys)
+        return get_metadata_from_lokalise(valid_keys, false)
 
       end
 
@@ -314,102 +363,153 @@ module Fastlane
 
       def self.itunes_connect_languages()
         return [
-          "en-US",
-          "zh-Hans",
-          "zh-Hant",
-          "da",
+          "af",
+          "am",
+          "ar",
+          "hy-AM",
+          "az-AZ",
+          "bn-BD",
+          "eu-ES",
+          "be",
+          "bg",
+          "my-MM",
+          "ca",
+          "zh-HK",
+          "zh-CN",
+          "zh-TW",
+          "hr",
+          "cs-CZ",
+          "da-DK",
           "nl-NL",
           "en-AU",
+          "en-IN",
+          "en-SG",
+          "en-ZA",
           "en-CA",
           "en-GB",
-          "fi",
+          "et",
+          "fil",
+          "fi-FI",
           "fr-FR",
           "fr-CA",
+          "gl-ES",
+          "ka-GE",
           "de-DE",
-          "el",
+          "el-GR",
+          "iw-IL",
+          "hi-IN",
+          "hu-HU",
+          "is-IS",
           "id",
-          "it",
-          "ja",
-          "ko",
+          "it-IT",
+          "ja-JP",
+          "kn-IN",
+          "km-KH",
+          "ko-KR",
+          "ky-KG",
+          "lo-LA",
+          "lv",
+          "lt",
+          "mk-MK",
           "ms",
-          "no",
+          "ml-IN",
+          "mr-IN",
+          "mn-MN",
+          "ne-NP",
+          "no-NO",
+          "fa",
+          "pl-PL",
           "pt-BR",
           "pt-PT",
-          "ru",
-          "es-MX",
+          "ro",
+          "rm",
+          "ru-RU",
+          "sr",
+          "si-LK",
+          "sk",
+          "sl",
+          "es-419",
           "es-ES",
-          "sv",
+          "es-US",
+          "sw",
+          "sv-SE",
+          "ta-IN",
+          "te-IN",
           "th",
-          "tr",
+          "tr-TR",
+          "uk",
           "vi",
+          "zu"
         ]
       end
 
       def self.google_play_languages()
         return [
-          'af',
-          'am',
-          'bg',
-          'ca',
-          'zh-HK',
-          'zh-CN',
-          'zh-TW',
-          'hr',
-          'cs',
-          'da',
-          'nl',
-          'en-GB',
-          'en-US',
-          'et',
-          'fil',
-          'fi',
-          'fr-CA',
-          'fr-FR',
-          'de',
-          'el',
-          'hi',
-          'hu',
-          'id / in',
-          'it',
-          'ja',
-          'ko',
-          'lv',
-          'lt',
-          'ms',
-          'no',
-          'pl',
-          'pt-BR',
-          'pt-PT',
-          'ro',
-          'ru',
-          'sr',
-          'sk',
-          'sl',
-          'es-419',
-          'es-ES',
-          'sw',
-          'sv',
-          'th',
-          'tr-TR',
-          'uk',
-          'vi',
-          'zu'
+          
         ]
       end
 
-      def self.fix_language_name(name, for_lokalise = false)
-        if for_lokalise
-          name =  name.gsub("-","_")
-          name = "en" if name == "en_US"
-          name = "de" if name == "de_DE"
-          name = "es" if name == "es_ES"
-          name = "fr" if name == "fr_FR"
-        else 
-          name = name.gsub("_","-")
-          name = "en-US" if name == "en"
-          name = "de-DE" if name == "de"
-          name = "es-ES" if name == "es"
-          name = "fr-FR" if name == "fr"
+      def self.fix_language_name(name, for_itunes, for_lokalise = false)
+        if for_itunes
+          if for_lokalise
+            name =  name.gsub("-","_")
+            name = "en" if name == "en_US"
+            name = "de" if name == "de_DE"
+            name = "es" if name == "es_ES"
+            name = "fr" if name == "fr_FR"
+          else 
+            name = name.gsub("_","-")
+            name = "en-US" if name == "en"
+            name = "de-DE" if name == "de"
+            name = "es-ES" if name == "es"
+            name = "fr-FR" if name == "fr"
+          end
+        else
+          if for_lokalise
+            name =  name.gsub("-","_")
+            name = "tr" if name == "tr_TR"
+            name = "hy" if name == "hy-AM"
+            name = "my" if name == "my-MM"
+            name = "my" if name == "cs-CZ"
+            name = "da" if name == "da-DK"
+            name = "et" if name == "et_EE"
+            name = "fi" if name == "fi-FI"
+            name = "he" if name == "iw-IL"
+            name = "hu" if name == "hu-HU"
+            name = "ja" if name == "ja-JP"
+            name = "ko" if name == "ko-KR"
+            name = "ky" if name == "ky-KG"
+            name = "lo" if name == "lo-LA"
+            name = "lv" if name == "lv_LV"
+            name = "lt" if name == "lt_LT"
+            name = "mr" if name == "mr-IN"
+            name = "no" if name == "no-NO"
+            name = "pl" if name == "pl-PL"
+            name = "si" if name == "si-LK"
+            name = "sl" if name == "sl_SI"
+          else 
+            name = name.gsub("_","-")
+            name = "tr-TR" if name == "tr"
+            name = "hy-AM" if name == "hy"
+            name = "my-MM" if name == "my"
+            name = "cs-CZ" if name == "cs"
+            name = "da-DK" if name == "da"
+            name = "et_EE" if name == "et"
+            name = "fi-FI" if name == "fi"
+            name = "iw-IL" if name == "he"
+            name = "hu-HU" if name == "hu"
+            name = "ja-JP" if name == "ja"
+            name = "ko-KR" if name == "ko"
+            name = "ky-KG" if name == "ky"
+            name = "lo-LA" if name == "lo"
+            name = "lv_LV" if name == "lv"
+            name = "lt_LT" if name == "lt"
+            name = "mr-IN" if name == "mr"
+            name = "no-NO" if name == "no"
+            name = "pl-PL" if name == "pl"
+            name = "si-LK" if name == "si"
+            name = "sl_SI" if name == "sl"
+          end
         end
         return name
       end
@@ -457,12 +557,16 @@ module Fastlane
                                          UI.user_error! "Override translation should be true or false" unless [true, false].include? value
                                        end),
           FastlaneCore::ConfigItem.new(key: :action,
-                                       description: "Action to perform (can be update_lokalise_itunes or update_lokalise_googleplay or update_itunes)",
+                                       description: "Action to perform (can be update_lokalise_itunes or update_lokalise_googleplay or update_itunes or update_googleplay)",
                                        optional: false,
                                        is_string: true,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Action should be update_lokalise or update_itunes or update_googleplay" unless ["update_lokalise_itunes", "update_lokalise_googleplay", "update_itunes"].include? value
+                                         UI.user_error! "Action should be update_lokalise_googleplay or update_lokalise_itunes or update_itunes or update_googleplay" unless ["update_lokalise_itunes", "update_lokalise_googleplay", "update_itunes", "update_googleplay"].include? value
                                        end),
+          FastlaneCore::ConfigItem.new(key: :releaseNumber,
+                                      description: "ReleaseNumber is required to update google play",
+                                      optional: true,
+                                      is_string: false),
         ]
       end
 
