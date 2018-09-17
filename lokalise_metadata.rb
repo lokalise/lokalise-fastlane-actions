@@ -13,10 +13,12 @@ module Fastlane
           metadata = get_metadata_from_lokalise_itunes()
           run_deliver_action(metadata)
         when "update_googleplay"
+          release_number = params[:release_number]
+          UI.user_error! "Release number is required when using `update_googleplay` action (should be an integer and greater that 0)" unless (release_number and release_number.is_a?(Integer) and release_number > 0)
           key_file = metadata_key_file_googleplay
           metadata = get_metadata_from_lokalise_googleplay()
-          save_metadata_to_files(metadata, params[:releaseNumber])
-          run_supply_action(params[:validateOnly])
+          save_metadata_to_files(metadata, release_number)
+          run_supply_action(params[:validate_only])
         when "update_lokalise_itunes"
           metadata = get_metadata_itunes_connect()
           add_languages = params[:add_languages]
@@ -93,7 +95,6 @@ module Fastlane
           metadata.each { |lang, translations|
             if translations.empty? == false
               translation = translations[key]
-              #puts translation
               final_translations[lang] = translation if translation != nil && translation.empty? == false
             end 
           }
@@ -115,7 +116,7 @@ module Fastlane
         Actions::SupplyAction.run(config)
       end
 
-      def self.save_metadata_to_files(metadata, releaseNumber)
+      def self.save_metadata_to_files(metadata, release_number)
 
         translations = {}
 
@@ -138,7 +139,7 @@ module Fastlane
           parameter.each { |lang, text|
             path = "fastlane/metadata/android/#{lang}/#{key}.txt"
             if "#{key}" ==  "changelogs"
-              path = "fastlane/metadata/android/#{lang}/changelogs/#{releaseNumber}.txt"
+              path = "fastlane/metadata/android/#{lang}/changelogs/#{release_number}.txt"
             end
             dirname = File.dirname(path)
             unless File.directory?(dirname)
@@ -166,7 +167,6 @@ module Fastlane
         http.use_ssl = true
         response = http.request(request)
 
-        #puts request_data
         jsonResponse = JSON.parse(response.body)
         raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["response"]["status"] == "success"  then
@@ -294,7 +294,6 @@ module Fastlane
               end
             }
             if translations.empty? == false
-              #puts "#{lang} #{fix_language_name(lang, for_itunes)}"
               metadata[fix_language_name(lang, for_itunes)] = translations
             end
           end
@@ -598,17 +597,17 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error! "Action should be update_lokalise_googleplay or update_lokalise_itunes or update_itunes or update_googleplay" unless ["update_lokalise_itunes", "update_lokalise_googleplay", "update_itunes", "update_googleplay"].include? value
                                        end),
-          FastlaneCore::ConfigItem.new(key: :releaseNumber,
-                                      description: "ReleaseNumber is required to update google play",
+          FastlaneCore::ConfigItem.new(key: :release_number,
+                                      description: "Release number is required to update google play",
                                       optional: true,
                                       is_string: false),
-          FastlaneCore::ConfigItem.new(key: :validateOnly,
-                                      description: "Only validate the metadata",
+          FastlaneCore::ConfigItem.new(key: :validate_only,
+                                      description: "Only validate the metadata (works with only update_googleplay action)",
                                       optional: true,
                                       is_string: false,
                                       default_value: false,
                                       verify_block: proc do |value|
-                                        UI.user_error! "Only valiudate should be true or false" unless [true, false].include? value
+                                        UI.user_error! "Validate only should be true or false" unless [true, false].include? value
                                       end),
         ]
       end
