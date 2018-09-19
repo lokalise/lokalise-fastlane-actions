@@ -10,6 +10,7 @@ module Fastlane
         clean_destination = params[:clean_destination]
         include_comments = params[:include_comments] ? 1 : 0
         use_original = params[:use_original] ? 1 : 0
+        export_empty = params[:export_empty]
 
         request_data = {
           api_token: token,
@@ -19,7 +20,7 @@ module Fastlane
           bundle_filename: "Localization.zip",
           bundle_structure: "%LANG_ISO%.lproj/Localizable.%FORMAT%",
           ota_plugin_bundle: 0,
-          export_empty: "base",
+          export_empty: export_empty,
           include_comments: include_comments
         }
 
@@ -35,7 +36,6 @@ module Fastlane
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
         response = http.request(request)
-
 
         jsonResponse = JSON.parse(response.body)
         UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
@@ -68,7 +68,6 @@ module Fastlane
         end
       end
 
-
       def self.unzip_file(file, destination, clean_destination)
         require 'zip'
         require 'rubygems'
@@ -87,7 +86,6 @@ module Fastlane
            }
         }
       end
-
 
       #####################################################
       # @!group Documentation
@@ -147,6 +145,14 @@ module Fastlane
                                        default_value: false,
                                        verify_block: proc do |value|
                                          UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :export_empty,
+                                       description: "How to export empty strings",
+                                       optional: true,
+                                       is_string: true,
+                                       default_value: "base",
+                                       verify_block: proc do |value|
+                                         UI.user_error! "Use one of options: empty, base, skip." unless ['empty', 'base', 'skip'].include?(value)
                                         end)
         ]
       end
