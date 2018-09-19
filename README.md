@@ -19,6 +19,7 @@ Parameters:
 - `languages`. Languages to download *(must be passed as array of strings, leave empty to download all)*.
 - `include_comments`. Include comments in exported files.
 - `use_original`. Use original filenames/formats.
+- `export_empty `. How to export empty strings. Available options: `empty`, `base`, `skip`. Default value: `base`.
 
 ## lokalise_metadata
 
