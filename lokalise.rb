@@ -11,6 +11,7 @@ module Fastlane
         include_comments = params[:include_comments] ? 1 : 0
         use_original = params[:use_original] ? 1 : 0
         export_empty = params[:export_empty]
+        export_sort = params[:export_sort]
 
         request_data = {
           api_token: token,
@@ -21,7 +22,8 @@ module Fastlane
           bundle_structure: "%LANG_ISO%.lproj/Localizable.%FORMAT%",
           ota_plugin_bundle: 0,
           export_empty: export_empty,
-          include_comments: include_comments
+          include_comments: include_comments,
+          export_sort: = export_sort
         }
 
         languages = params[:languages]
@@ -153,6 +155,14 @@ module Fastlane
                                        default_value: "base",
                                        verify_block: proc do |value|
                                          UI.user_error! "Use one of options: empty, base, skip." unless ['empty', 'base', 'skip'].include?(value)
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :export_sort,
+                                       description: "Export key sort mode",
+                                       optional: true,
+                                       is_string: true,
+                                       default_value: "last_updated",
+                                       verify_block: proc do |value|
+                                         UI.user_error! "Use one of options: first_added, last_added, last_updated, a_z, z_a." unless ['first_added', 'last_added', 'last_updated', 'a_z', 'z_a'].include?(value)
                                         end)
         ]
       end
