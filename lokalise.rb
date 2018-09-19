@@ -23,7 +23,7 @@ module Fastlane
           ota_plugin_bundle: 0,
           export_empty: export_empty,
           include_comments: include_comments,
-          export_sort: = export_sort
+          export_sort: export_sort
         }
 
         languages = params[:languages]
@@ -160,7 +160,7 @@ module Fastlane
                                        description: "Export key sort mode",
                                        optional: true,
                                        is_string: true,
-                                       default_value: "last_updated",
+                                       default_value: "a_z",
                                        verify_block: proc do |value|
                                          UI.user_error! "Use one of options: first_added, last_added, last_updated, a_z, z_a." unless ['first_added', 'last_added', 'last_updated', 'a_z', 'z_a'].include?(value)
                                         end)
