@@ -36,7 +36,6 @@ module Fastlane
         http.use_ssl = true
         response = http.request(request)
 
-
         jsonResponse = JSON.parse(response.body)
         UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["response"]["status"] == "success" && jsonResponse["bundle"]["file"].kind_of?(String)  then
@@ -50,7 +49,7 @@ module Fastlane
           response = http.request(zipRequest)
           if response.content_type == "application/zip" or response.content_type == "application/octet-stream" then
             FileUtils.mkdir_p("lokalisetmp")
-            open("lokalisetmp/a.zip", "wb") { |file| 
+            open("lokalisetmp/a.zip", "wb") { |file|
               file.write(response.body)
             }
             unzip_file("lokalisetmp/a.zip", destination, clean_destination)
@@ -156,7 +155,7 @@ module Fastlane
       end
 
       def self.is_supported?(platform)
-        [:ios, :mac].include? platform 
+        [:ios, :mac].include? platform
       end
     end
   end
