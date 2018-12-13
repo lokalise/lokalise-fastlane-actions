@@ -28,6 +28,11 @@ module Fastlane
           request_data["langs"] = languages.to_json
         end
 
+        tags = params[:tags]
+        if tags.kind_of? Array then
+          request_data["include_tags"] = tags.to_json
+        end
+
         uri = URI("https://api.lokalise.co/api/project/export")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
@@ -147,7 +152,15 @@ module Fastlane
                                        default_value: false,
                                        verify_block: proc do |value|
                                          UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
-                                        end)
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :tags,
+                                        description: "Include only the keys tagged with a given set of tags",
+                                        optional: true,
+                                        is_string: false,
+                                        verify_block: proc do |value|
+                                          UI.user_error! "Tags should be passed as array" unless value.kind_of? Array
+                                        end),
+
         ]
       end
 
