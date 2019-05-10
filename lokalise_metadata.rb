@@ -181,12 +181,12 @@ module Fastlane
         return jsonResponse
       end
 
-      def self.upload_metadata(metadata_keys, metadata)
+      def self.upload_metadata(metadata_keys, for_itunes, metadata)
         
         keys = []
 
         metadata_keys.each do |key, value|
-          key = make_key_object_from_metadata(key, metadata)
+          key = make_key_object_from_metadata(key, metadata, for_itunes)
           if key 
             keys << key
           end
