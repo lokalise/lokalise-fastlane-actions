@@ -1,6 +1,6 @@
 module Fastlane
   module Actions
-    class LokaliseAction < Action
+    class LokaliseUploadAction < Action
       def self.run(params)
         require 'net/http'
         require 'json'
@@ -40,20 +40,15 @@ module Fastlane
         response = http.request(request)
 
         jsonResponse = JSON.parse(response.body)
-        #UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
-        puts "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
+        UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["project_id"].kind_of?(String)  then
-          #UI.message "Lokalise Uploaded for #{lang_code} successfully #{jsonResponse["result"]}"
-          puts "Lokalise Uploaded for #{lang_code} successfully #{jsonResponse["result"]}"
-
+          UI.message "Lokalise Uploaded for #{lang_code} successfully #{jsonResponse["result"]}"
         elsif jsonResponse["error"]["code"].kind_of?(Integer)
           code = jsonResponse["error"]["code"]
           message = jsonResponse["error"]["message"]
-          # UI.error "Response error code #{code} (#{message}) 📟"
-          puts "Response error code #{code} (#{message}) 📟"
+          UI.error "Response error code #{code} (#{message}) 📟"
         else
-          #UI.error "Bad response 🉐\n#{jsonResponse}"
-          puts "Bad response 🉐\n#{jsonResponse}"
+          UI.error "Bad response 🉐\n#{jsonResponse}"
         end
       end
 
