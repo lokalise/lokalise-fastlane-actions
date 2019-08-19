@@ -2,6 +2,8 @@
 
 Fastlane actions for integrating Lokalise into your Android project using Fastlane.
 
+All Android actions based on APIs V2
+
 ## Note
 
 These are Fastlane actions, not plugins. Add them to `fastlane/actions` folder in the root of your project.
