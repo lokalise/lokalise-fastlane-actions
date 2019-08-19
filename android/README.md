@@ -39,7 +39,7 @@ This action uploads the new keys from your local strings.xml files to lokalise p
 
 Sample:
 ```
-lokalise_download(
+lokalise_upload(
     api_token: "876af8bc64e71cbdf4fa5674cd9a8fedd10c9c11",
     project_identifier: "269767515d496f83265e60.99827102",
     languages: ["en", "ar"]
