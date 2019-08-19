@@ -11,7 +11,7 @@ module Fastlane
         languages = params[:languages]
 
         for lang_code in languages do
-          file_path = (lang_code == "en" ? "./app/simon/values/strings.xml" : "./app/simon/values-#{lang_code}/strings.xml")
+          file_path = (lang_code == "en" ? "./app/src/main/res/values/strings.xml" : "./app/src/main/res/values-#{lang_code}/strings.xml")
           self.upload_lang(token, project_identifier, lang_code, file_path)
         end
       end
