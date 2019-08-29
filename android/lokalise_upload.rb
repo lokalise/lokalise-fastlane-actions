@@ -42,7 +42,7 @@ module Fastlane
         jsonResponse = JSON.parse(response.body)
         UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
         if jsonResponse["project_id"].kind_of?(String)  then
-          UI.message "Lokalise Uploaded for #{lang_code} successfully #{jsonResponse["result"]}"
+          UI.message "Uploaded localization file for #{lang_code} successfully #{jsonResponse["result"]}"
         elsif jsonResponse["error"]["code"].kind_of?(Integer)
           code = jsonResponse["error"]["code"]
           message = jsonResponse["error"]["message"]
@@ -58,7 +58,7 @@ module Fastlane
       #####################################################
 
       def self.description
-        "Download Lokalise localization"
+        "Upload Android strings.xml to Lokalise"
       end
 
       def self.available_options

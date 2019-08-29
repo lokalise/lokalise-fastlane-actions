@@ -91,7 +91,7 @@ module Fastlane
       #####################################################
 
       def self.description
-        "Download Lokalise localization"
+        "Download Android localization from Lokalise"
       end
 
       def self.available_options
