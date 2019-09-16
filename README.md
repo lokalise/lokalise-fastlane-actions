@@ -1,6 +1,6 @@
 # Lokalise Fastlane Actions
 
-Collection of actions for integrating Lokalise into your iOS project using Fastlane. Learn more in our [blog post.](https://blog.lokalise.co/automating-itunes-connect-deployment-with-fastlane-and-lokalise/)
+Collection of actions for integrating Lokalise into your iOS project using Fastlane. Learn more in our [blog post.](https://blog.lokalise.com/automating-itunes-connect-deployment-with-fastlane-and-lokalise/)
 
 For Android actions please check [here](https://github.com/lokalise/lokalise-fastlane-actions/android)
 
