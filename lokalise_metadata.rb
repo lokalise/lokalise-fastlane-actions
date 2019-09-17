@@ -159,7 +159,7 @@ module Fastlane
           id: @params[:project_identifier]
         }.merge(data)
 
-        uri = URI("https://api.lokalise.co/api/#{path}")
+        uri = URI("https://api.lokalise.com/api/#{path}")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
   
@@ -557,7 +557,7 @@ module Fastlane
       end
 
       def self.details
-        "This action scans fastlane/metadata folder and uploads metadata to lokalise.co"
+        "This action scans fastlane/metadata folder and uploads metadata to lokalise.com"
       end
 
       def self.available_options

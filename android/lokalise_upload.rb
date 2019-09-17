@@ -29,7 +29,7 @@ module Fastlane
             slashn_to_linebreak: true
         }
 
-        uri = URI("https://api.lokalise.co/api2/projects/#{project_id}/files/upload")
+        uri = URI("https://api.lokalise.com/api2/projects/#{project_id}/files/upload")
         request = Net::HTTP::Post.new(uri)
         request["content-type"] = 'application/json'
         request["x-api-token"] = token

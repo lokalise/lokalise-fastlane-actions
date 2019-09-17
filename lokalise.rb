@@ -33,7 +33,7 @@ module Fastlane
           request_data["include_tags"] = tags.to_json
         end
 
-        uri = URI("https://api.lokalise.co/api/project/export")
+        uri = URI("https://api.lokalise.com/api/project/export")
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(request_data)
 
