@@ -1,6 +1,6 @@
 module Fastlane
   module Actions
-    class LokaliseAction < Action
+    class LokaliseDownloadAction < Action
       def self.run(params)
         require 'net/http'
         require 'json'
