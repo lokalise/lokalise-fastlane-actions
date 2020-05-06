@@ -10,6 +10,9 @@ module Fastlane
         clean_destination = params[:clean_destination]
         include_comments = params[:include_comments] ? 1 : 0
         use_original = params[:use_original] ? 1 : 0
+        bundle_structure = params[:bundle_structure] ? params[:bundle_structure] : "%LANG_ISO%.lproj/Localizable.%FORMAT%"
+        export_sort = params[:export_sort] ? params[:export_sort] : "a_z"
+        replace_breaks = params[:replace_breaks] ? 1 : 0
 
         request_data = {
           api_token: token,
@@ -17,10 +20,12 @@ module Fastlane
           type: "strings",
           use_original: use_original,
           bundle_filename: "Localization.zip",
-          bundle_structure: "%LANG_ISO%.lproj/Localizable.%FORMAT%",
+          bundle_structure: bundle_structure,
           ota_plugin_bundle: 0,
-          export_empty: "base",
-          include_comments: include_comments
+          export_empty: "skip",
+          export_sort: export_sort,
+          include_comments: include_comments,
+          replace_breaks: replace_breaks,
         }
 
         languages = params[:languages]
@@ -28,9 +33,14 @@ module Fastlane
           request_data["langs"] = languages.to_json
         end
 
-        tags = params[:tags]
-        if tags.kind_of? Array then
-          request_data["include_tags"] = tags.to_json
+        include_tags = params[:include_tags]
+        if include_tags.kind_of? Array then
+          request_data["include_tags"] = include_tags.to_json
+        end
+
+        exclude_tags = params[:exclude_tags]
+        if exclude_tags.kind_of? Array then
+          request_data["exclude_tags"] = exclude_tags.to_json
         end
 
         uri = URI("https://api.lokalise.com/api/project/export")
@@ -40,7 +50,6 @@ module Fastlane
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
         response = http.request(request)
-
 
         jsonResponse = JSON.parse(response.body)
         UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
@@ -153,14 +162,42 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
                                         end),
-            FastlaneCore::ConfigItem.new(key: :tags,
+            FastlaneCore::ConfigItem.new(key: :include_tags,
                                         description: "Include only the keys tagged with a given set of tags",
                                         optional: true,
                                         is_string: false,
                                         verify_block: proc do |value|
                                           UI.user_error! "Tags should be passed as array" unless value.kind_of? Array
                                         end),
-
+            FastlaneCore::ConfigItem.new(key: :exclude_tags,
+                                        description: "Exclude only the keys tagged with a given set of tags",
+                                        optional: true,
+                                        is_string: false,
+                                        verify_block: proc do |value|
+                                          UI.user_error! "Tags should be passed as array" unless value.kind_of? Array
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :bundle_structure,
+                                        description: "Bundle structure, used when original_filenames set to false. Allowed placeholders are %LANG_ISO%, %LANG_NAME%, %FORMAT% and %PROJECT_NAME%)",
+                                        optional: true,
+                                        is_string: true,
+                                        verify_block: proc do |value|
+                                          UI.user_error! "Should be a String" unless value.kind_of? String
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :export_sort,
+                                        description: "Export key sort mode. Allowed value are first_added, last_added, last_updated, a_z, z_a",
+                                        optional: true,
+                                        is_string: true,
+                                        verify_block: proc do |value|
+                                          UI.user_error! "Should be a String" unless value.kind_of? String
+                                        end),
+            FastlaneCore::ConfigItem.new(key: :replace_breaks,
+                                       description: "Replace breaks",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: false,
+                                       verify_block: proc do |value|
+                                          UI.user_error! "Replace break should be true or false" unless [true, false].include? value
+                                       end),
         ]
       end
 
