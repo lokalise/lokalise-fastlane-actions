@@ -24,12 +24,12 @@ module Fastlane
 
         filter_langs = params[:languages]
         if filter_langs.kind_of? Array then
-          request_data["filter_langs"] = filter_langs.to_json
+          body["filter_langs"] = filter_langs.to_json
         end
 
         tags = params[:tags]
         if tags.kind_of? Array then
-          request_data["include_tags"] = tags.to_json
+          body["include_tags"] = tags.to_json
         end
 
 
