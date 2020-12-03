@@ -24,7 +24,7 @@ module Fastlane
 
         filter_langs = params[:languages]
         if filter_langs.kind_of? Array then
-          body["filter_langs"] = filter_langs.to_json
+          body["filter_langs"] = filter_langs
         end
 
         tags = params[:tags]
