@@ -29,9 +29,8 @@ module Fastlane
 
         tags = params[:tags]
         if tags.kind_of? Array then
-          body["include_tags"] = tags.to_json
+          body["include_tags"] = tags
         end
-
 
         uri = URI("https://api.lokalise.com/api2/projects/#{project_identifier}/files/download")
         request = Net::HTTP::Post.new(uri)
@@ -64,9 +63,9 @@ module Fastlane
           else
             UI.error "Response did not include ZIP"
           end
-        elsif jsonResponse["response"]["status"] == "error"
-          code = jsonResponse["response"]["code"]
-          message = jsonResponse["response"]["message"]
+        elsif jsonResponse["error"].kind_of? Hash
+          code = jsonResponse["error"]["code"]
+          message = jsonResponse["error"]["message"]
           UI.error "Response error code #{code} (#{message}) 📟"
         else
           UI.error "Bad response 🉐\n#{jsonResponse}"
