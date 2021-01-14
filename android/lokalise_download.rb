@@ -16,7 +16,7 @@ module Fastlane
             original_filenames: false,
             bundle_structure: "values-%LANG_ISO%/strings.%FORMAT%",
             ota_plugin_bundle: 0,
-            export_empty: "base",
+            export_empty_as: "base",
             include_comments: false,
             replace_breaks: true
         }
