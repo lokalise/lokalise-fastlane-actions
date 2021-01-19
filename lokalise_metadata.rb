@@ -54,7 +54,7 @@ module Fastlane
           data = {
             languages: languages.map { |language| {lang_iso: fix_language_name(language, for_itunes, true)} }
           }
-          make_request "languages", data.to_json
+          make_request "languages", data
         end
 
         def filter_metadata(metadata, other_metadata)
@@ -155,10 +155,10 @@ module Fastlane
           request = nil
 
           if resp_type == :post
-            request = Net::HTTP::Post.new uri
+            request = Net::HTTP::Post.new uri, 'Content-Type' => 'application/json', 'Accept' => 'application/json'
             request.body = data.to_json
           else
-            request = Net::HTTP::Get.new uri
+            request = Net::HTTP::Get.new uri, 'Accept' => 'application/json'
           end
 
           request.add_field "x-api-token", @params[:api_token]
@@ -192,7 +192,7 @@ module Fastlane
             keys: keys
           }
 
-          make_request "keys", data.to_json
+          make_request "keys", data
         end
 
         def make_key_object_from_metadata(key, metadata, for_itunes)
