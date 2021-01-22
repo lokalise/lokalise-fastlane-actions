@@ -31,7 +31,7 @@ module Fastlane
           raise "Bad response 🉐\n#{response.body}".red unless jsonResponse.kind_of? Hash
           if response.kind_of? Net::HTTPSuccess
             inserted = jsonResponse["keys"].count
-            Helper.log.info "Keys uploaded. #{inserted} inserted 🚀".green
+            UI.success "Keys uploaded. #{inserted} inserted 🚀"
           elsif jsonResponse["response"]["status"] == "error"
             code = jsonResponse["response"]["code"]
             message = jsonResponse["response"]["message"]
