@@ -150,12 +150,15 @@ module Fastlane
 
         end
 
-        def make_request(path, data, resp_type = :post)
+        def make_request(path, data, resp_type = :post, allow_fail = false)
           uri = URI("https://api.lokalise.com/api2/projects/#{@params[:project_identifier]}/#{path}")
           request = nil
 
           if resp_type == :post
             request = Net::HTTP::Post.new uri, 'Content-Type' => 'application/json', 'Accept' => 'application/json'
+            request.body = data.to_json
+          elsif resp_type == :put
+            request = Net::HTTP::Put.new uri, 'Content-Type' => 'application/json', 'Accept' => 'application/json'
             request.body = data.to_json
           else
             request = Net::HTTP::Get.new uri, 'Accept' => 'application/json'
@@ -168,45 +171,56 @@ module Fastlane
 
           jsonResponse = JSON.parse(response.body)
 
-          raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
-          if response.kind_of? Net::HTTPSuccess
-            UI.success "Response #{jsonResponse} 🚀"
-          elsif jsonResponse["error"]
-            code = jsonResponse["error"]["code"]
-            message = jsonResponse["error"]["message"]
-            raise "Response error code #{code} (#{message}) 📟"
-          else
-            raise "Bad response 🉐\n#{jsonResponse}"
+          unless allow_fail
+            raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
+            if response.kind_of? Net::HTTPSuccess
+              UI.success "Response #{jsonResponse} 🚀"
+            elsif jsonResponse["error"]
+              code = jsonResponse["error"]["code"]
+              message = jsonResponse["error"]["message"]
+              raise "Response error code #{code} (#{message}) 📟"
+            else
+              raise "Bad response 🉐\n#{jsonResponse}"
+            end
           end
-          return jsonResponse
+          jsonResponse
         end
 
         def upload_metadata(metadata_keys, for_itunes, metadata)
-          keys = []
+          keys_to_add = { keys: [] }
 
-          metadata_keys.each do |key, value|
-            key = make_key_object_from_metadata key, metadata, for_itunes
-            keys << key if key
+          metadata_keys.each do |key, _value|
+            key = key_object_without_trans_from_metadata key, metadata, for_itunes
+            keys_to_add[:keys] << key if key
           end
 
-          data = {
-            keys: keys
-          }
+          make_request "keys", keys_to_add, :post, true
 
-          make_request "keys", data
+          names = keys_to_add[:keys].map {|k| k[:key_name] }
+          found_keys = make_request "keys?filter_keys=#{names.join(',')}", nil, :get
+          ids_names = found_keys['keys'].map {|k| {k['key_id'] => k['key_name']['other']} }
+
+          keys_to_update = { keys: [] }
+          ids_names.each do |element|
+            element.each do |id, name|
+              key = make_key_object_from_metadata id, name, metadata, for_itunes
+              keys_to_update[:keys] << key if key
+            end
+          end
+          make_request "keys", keys_to_update, :put
         end
 
-        def make_key_object_from_metadata(key, metadata, for_itunes)
+        def make_key_object_from_metadata(key_id, key_name, metadata, for_itunes)
           key_data = {
-            "key_name": key,
+            "key_id": key_id,
             "platforms": ['other'],
             "translations": []
           }
 
           metadata.each do |iso_code, data|
-            translation = data[key]
+            translation = data[key_name]
+
             unless translation.nil? || translation.empty?
-              UI.error key_data
               key_data[:translations].push({
                 "language_iso": fix_language_name(iso_code, for_itunes, true),
                 "translation": translation
@@ -215,6 +229,15 @@ module Fastlane
           end
 
           key_data[:translations].empty? ? nil : key_data
+        end
+
+        def key_object_without_trans_from_metadata(key, metadata, for_itunes)
+          key_data = {
+            key_name: key,
+            platforms: ['other']
+          }
+
+          key ? key_data : nil
         end
 
         def upload_metadata_itunes(metadata)
