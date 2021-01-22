@@ -15,7 +15,7 @@ module Fastlane
           raw_keys.each do |key|
             keys[:keys] << {
               key_name: key,
-              platforms: platforms
+              platforms: platforms.map(&:downcase)
             }
           end
 
@@ -74,7 +74,7 @@ module Fastlane
                                             raise "Keys must be passed as array of strings".red unless (value.is_a? Array and !value.empty?)
                                             value.each.with_index do |key, index|
                                               raise "Key at index #{index} must be string".red unless key.is_a? String
-                                              raise "Key at index #{index} can't be empty".red if key.empty?
+                                              raise "Key at index #{index} must be ios, android, web, or other" unless %w[ios android other web].include?(key.downcase)
                                             end
                                         end),
             FastlaneCore::ConfigItem.new(key: :keys,
@@ -82,7 +82,7 @@ module Fastlane
                                         optional: false,
                                         is_string: false,
                                         verify_block: proc do |value|
-                                            raise "Keys must be passed as array of strings".red unless (value.kind_of? Array and not value.empty?)
+                                            raise "Keys must be passed as array of strings".red unless (value.kind_of? Array and !value.empty?)
                                             value.each_with_index do |key, index|
                                               raise "Key at index #{index} must be string".red unless key.kind_of? String
                                               raise "Key at index #{index} can't be empty".red if key.empty?
