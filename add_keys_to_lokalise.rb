@@ -8,15 +8,14 @@ module Fastlane
           token = params[:api_token]
           project_id = params[:project_identifier]
           raw_keys = params[:keys]
-          # platform_mask = params[:platform_mask]
-          platform = params[:platform] # ?
+          platforms = params[:platforms]
 
           keys = {keys: []}
 
           raw_keys.each do |key|
             keys[:keys] << {
               key_name: key,
-              platforms: [platform]
+              platforms: platforms
             }
           end
 
@@ -66,13 +65,17 @@ module Fastlane
                                         verify_block: proc do |value|
                                             raise "No Project Identifier for Lokalise given, pass using `project_identifier: 'identifier'`".red unless (value and not value.empty?)
                                         end),
-            FastlaneCore::ConfigItem.new(key: :platform_mask,
-                                        description: "Platform mask where 1 is iOS, 2 is Android, 4 is Web and 16 is Other",
+            FastlaneCore::ConfigItem.new(key: :platforms,
+                                        description: "Platforms array. Supported values: ios, web, android, other",
                                         optional: true,
                                         is_string: false,
-                                        default_value: 1,
+                                        default_value: %w[ios],
                                         verify_block: proc do |value|
-                                            raise "Platfrom mask is an integer value".red unless value.is_a?(Integer)
+                                            raise "Keys must be passed as array of strings".red unless (value.is_a? Array and !value.empty?)
+                                            value.each.with_index do |key, index|
+                                              raise "Key at index #{index} must be string".red unless key.is_a? String
+                                              raise "Key at index #{index} can't be empty".red if key.empty?
+                                            end
                                         end),
             FastlaneCore::ConfigItem.new(key: :keys,
                                         description: "Keys to add",
@@ -93,7 +96,7 @@ module Fastlane
         end
 
         def is_supported?(platform)
-          [:ios, :mac].include? platform 
+          [:ios, :mac].include? platform
         end
       end
     end
