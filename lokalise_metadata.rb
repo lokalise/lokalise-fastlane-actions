@@ -37,7 +37,7 @@ module Fastlane
             metadata = get_metadata_google_play
             add_languages = params[:add_languages]
             override_translation = params[:override_translation]
-            
+
             create_languages(metadata.keys, false) if add_languages
 
             if override_translation
@@ -167,12 +167,23 @@ module Fastlane
           response = http.request request
 
           jsonResponse = JSON.parse(response.body)
+          if path == "keys"
+            #raise "Keys request was done"
+            data[:keys].each do |key|
+              key[:translations].each do |tr|
+                puts tr[:language_iso]
+              end
+            end
+            raise "Bad response 🉐\n#{response.body}"
+
+          end
+
           raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
           if response.kind_of? Net::HTTPSuccess
             UI.success "Response #{jsonResponse} 🚀"
-          elsif jsonResponse["response"]["status"] == "error"
-            code = jsonResponse["response"]["code"]
-            message = jsonResponse["response"]["message"]
+          elsif jsonResponse["error"]
+            code = jsonResponse["error"]["code"]
+            message = jsonResponse["error"]["message"]
             raise "Response error code #{code} (#{message}) 📟"
           else
             raise "Bad response 🉐\n#{jsonResponse}"
@@ -198,21 +209,22 @@ module Fastlane
         def make_key_object_from_metadata(key, metadata, for_itunes)
           key_data = {
             "key_name": key,
-            "platforms": ['ios'], # 16?
+            "platforms": ['other'],
             "translations": []
           }
 
           metadata.each do |iso_code, data|
             translation = data[key]
             unless translation.nil? || translation.empty?
-              key_data["translations"] << {
+              UI.error key_data
+              key_data[:translations].push({
                 "language_iso": fix_language_name(iso_code, for_itunes, true),
                 "translation": translation
-              }
+              })
             end
           end
 
-          key_data["translations"].empty? ? nil : key_data
+          key_data[:translations].empty? ? nil : key_data
         end
 
         def upload_metadata_itunes(metadata)
@@ -263,15 +275,17 @@ module Fastlane
         end
 
         def get_metadata_from_lokalise(valid_keys, for_itunes)
-          response = make_request "keys?filter_platforms=ios&filter_key_ids=#{valid_keys.join(',')}", nil, :get
+          response = make_request "keys?include_translations=1&filter_platforms=other&filter_keys=#{valid_keys.join(',')}", nil, :get
           valid_languages = for_itunes ? itunes_connect_languages_in_lokalise : google_play_languages_in_lokalise
           metadata = {}
 
+          puts valid_keys
+          puts response
           response["keys"].each do |raw_key|
             raw_key['translations'].each do |raw_translation|
               lang = raw_translation['language_iso']
               if valid_languages.include? lang
-                key = raw_key['key_name']['ios'] # platform mask 16?
+                key = raw_key['key_name']['other']
                 translation = raw_translation['translation']
 
                 if valid_keys.include?(key) && !translation.nil? && !translation.empty?
@@ -282,7 +296,7 @@ module Fastlane
               end
             end
           end
-
+          puts metadata
           metadata
         end
 
@@ -469,12 +483,16 @@ module Fastlane
               name = "de" if name == "de_DE"
               name = "es" if name == "es_ES"
               name = "fr" if name == "fr_FR"
+              name = "zh_CN" if name == "zh_Hans"
+              name = "zh_TW" if name == "zh_Hant"
             else
               name = name.gsub("_","-")
               name = "en-US" if name == "en"
               name = "de-DE" if name == "de"
               name = "es-ES" if name == "es"
               name = "fr-FR" if name == "fr"
+              name = "zh-Hans" if name == "zh-CN"
+              name = "zh-Hant" if name == "zh-TW"
             end
           else
             if for_lokalise
