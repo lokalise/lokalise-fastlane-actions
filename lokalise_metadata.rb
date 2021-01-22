@@ -167,16 +167,6 @@ module Fastlane
           response = http.request request
 
           jsonResponse = JSON.parse(response.body)
-          if path == "keys"
-            #raise "Keys request was done"
-            data[:keys].each do |key|
-              key[:translations].each do |tr|
-                puts tr[:language_iso]
-              end
-            end
-            raise "Bad response 🉐\n#{response.body}"
-
-          end
 
           raise "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
           if response.kind_of? Net::HTTPSuccess
@@ -279,8 +269,6 @@ module Fastlane
           valid_languages = for_itunes ? itunes_connect_languages_in_lokalise : google_play_languages_in_lokalise
           metadata = {}
 
-          puts valid_keys
-          puts response
           response["keys"].each do |raw_key|
             raw_key['translations'].each do |raw_translation|
               lang = raw_translation['language_iso']
@@ -296,7 +284,6 @@ module Fastlane
               end
             end
           end
-          puts metadata
           metadata
         end
 
