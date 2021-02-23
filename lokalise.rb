@@ -11,7 +11,7 @@ module Fastlane
         include_comments = params[:include_comments]
         original_filenames = params[:use_original]
         bundle_structure = params[:bundle_structure] ? params[:bundle_structure] : "%LANG_ISO%.lproj/Localizable.%FORMAT%"
-        export_sort = params[:export_sort] ? params[:export_sort] : "a_z"
+        export_sort = params[:export_sort] ? params[:export_sort] : "first_added"
         replace_breaks = params[:replace_breaks] ? true : false
 
         body = {
@@ -163,7 +163,7 @@ module Fastlane
                                         UI.user_error! "Tags should be passed as array" unless value.kind_of? Array
                                       end),
           FastlaneCore::ConfigItem.new(key: :bundle_structure,
-                                      description: "Bundle structure, used when original_filenames set to false. Allowed placeholders are %LANG_ISO%, %LANG_NAME%, %FORMAT% and %PROJECT_NAME%)",
+                                      description: "Bundle structure, used when original_filenames set to false. Allowed placeholders are %LANG_ISO%, %LANG_NAME%, %FORMAT% and %PROJECT_NAME%",
                                       optional: true,
                                       is_string: true,
                                       verify_block: proc do |value|
