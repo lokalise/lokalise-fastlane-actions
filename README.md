@@ -21,6 +21,10 @@ Parameters:
 - `languages`. Languages to download *(must be passed as array of strings, leave empty to download all)*.
 - `include_comments`. Include comments in exported files.
 - `use_original`. Use original filenames/formats.
+- `tags`. Include only the keys tagged with a given set of tags.
+- `bundle_structure`. Bundle structure, used when original_filenames set to false. Allowed placeholders are %LANG_ISO%, %LANG_NAME%, %FORMAT% and %PROJECT_NAME%).
+- `export_sort`. Export key sort mode. Allowed values are `first_added`, `last_added`, `last_updated`, `a_z`, `z_a`.
+- `replace_breaks`. Replace breaks.
 
 ## lokalise_metadata
 
