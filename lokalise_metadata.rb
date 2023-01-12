@@ -95,7 +95,9 @@ module Fastlane
             metadata.each do |lang, translations|
               if !translations.empty?
                 translation = translations[key]
-                final_translations[lang] = translation if !translation.nil? && !translation.empty?
+                if !translation.nil? && !translation.empty?
+                  final_translations[lang] = translation == '[VOID]' ? ' ' : translation
+                end
               end
             end
 
@@ -125,7 +127,9 @@ module Fastlane
             metadata.each do |lang, translations|
               if !translations.empty?
                 translation = translations[key]
-                final_translations[lang] = translation if !translation.nil? && !translation.empty?
+                if !translation.nil? && !translation.empty?
+                  final_translations[lang] = translation == '[VOID]' ? ' ' : translation
+                end
               end
             end
 
