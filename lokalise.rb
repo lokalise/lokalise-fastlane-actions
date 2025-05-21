@@ -10,6 +10,10 @@ module Fastlane
         clean_destination = params[:clean_destination]
         include_comments = params[:include_comments]
         original_filenames = params[:use_original]
+        replace_breaks = params[:replace_breaks]
+        escape_percent = params[:escape_percent]
+        max_retries = params[:max_retries]
+        retry_delay = params[:retry_delay]
 
         body = {
           format: "ios_sdk",
@@ -19,7 +23,8 @@ module Fastlane
           export_empty_as: "base",
           export_sort: "first_added",
           include_comments: include_comments,
-          replace_breaks: false
+          replace_breaks: replace_breaks,
+          escape_percent: escape_percent
         }
 
         filter_langs = params[:languages]
@@ -32,37 +37,49 @@ module Fastlane
           body["include_tags"] = tags
         end
 
-        uri = URI("https://api.lokalise.com/api2/projects/#{project_identifier}/files/download")
-        request = Net::HTTP::Post.new(uri)
-        request.body = body.to_json
-        request.add_field("x-api-token", token)
-
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        response = http.request(request)
+        uri = URI("https://api.lokalise.com/api2/projects/#{project_identifier}/files/async-download")
+        response = perform_request(method: "post", uri: uri, token: token, body: body)
 
         jsonResponse = JSON.parse(response.body)
         UI.error "Bad response 🉐\n#{response.body}" unless jsonResponse.kind_of? Hash
-        if response.code == "200" && jsonResponse["bundle_url"].kind_of?(String)  then
-          UI.message "Downloading localizations archive 📦"
+        if response.code == "200" && jsonResponse["process_id"].kind_of?(String) then
+          processId = jsonResponse["process_id"]
+          UI.message "Async download started (process_id: #{processId}) ⏳"
           FileUtils.mkdir_p("lokalisetmp")
-          fileURL = jsonResponse["bundle_url"]
-          uri = URI(fileURL)
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true
-          zipRequest = Net::HTTP::Get.new(uri)
-          response = http.request(zipRequest)
-          if response.content_type == "application/zip" or response.content_type == "application/octet-stream" then
-            FileUtils.mkdir_p("lokalisetmp")
-            open("lokalisetmp/a.zip", "wb") { |file| 
-              file.write(response.body)
-            }
-            unzip_file("lokalisetmp/a.zip", destination, clean_destination)
-            FileUtils.remove_dir("lokalisetmp")
-            UI.success "Localizations extracted to #{destination} 📗 📕 📘"
-          else
-            UI.error "Response did not include ZIP"
+          
+          status = nil
+          download_url = nil
+
+          max_retries.times do |attempt|
+            sleep(retry_delay) if attempt > 0
+            poll_uri = URI("https://api.lokalise.com/api2/projects/#{project_identifier}/processes/#{processId}")
+            poll_response = perform_request(method: "get", uri: poll_uri, token: token)
+            poll_json = JSON.parse(poll_response.body)
+
+            process = poll_json["process"]
+            status = process["status"]
+            message = process["message"]
+
+            UI.message "Status: #{status} (attempt #{attempt + 1}/#{max_retries})"
+
+            case status
+            when "finished"
+              download_url = process["details"] && process["details"]["download_url"]
+              break
+            when "failed", "cancelled"
+              UI.error "Process #{status}: #{message}"
+              return
+            else
+              UI.message "Process status: #{status} (attempt #{attempt + 1}/#{max_retries})"
+            end
           end
+
+          if status != "finished" || download_url.nil?
+            UI.error "Download did not finish in time or missing URL"
+            return
+          end
+
+          download_and_unzip(download_url, destination, clean_destination)
         elsif jsonResponse["error"].kind_of? Hash
           code = jsonResponse["error"]["code"]
           message = jsonResponse["error"]["message"]
@@ -72,6 +89,22 @@ module Fastlane
         end
       end
 
+      def self.download_and_unzip(file_url, destination, clean_destination)
+        require 'open-uri'
+        require 'zip'
+
+        UI.message "Downloading ZIP from #{file_url}"
+        FileUtils.mkdir_p("lokalisetmp")
+        zip_path = "lokalisetmp/a.zip"
+
+        URI.open(file_url) do |remote|
+          File.write(zip_path, remote.read)
+        end
+
+        unzip_file(zip_path, destination, clean_destination)
+        FileUtils.remove_dir("lokalisetmp")
+        UI.success "Localizations extracted to #{destination}"
+      end
 
       def self.unzip_file(file, destination, clean_destination)
         require 'zip'
@@ -92,6 +125,25 @@ module Fastlane
         }
       end
 
+      def self.perform_request(method:, uri:, token:, body: nil)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+
+        request = case method.to_s.downcase
+                  when "post"
+                    Net::HTTP::Post.new(uri)
+                  when "get"
+                    Net::HTTP::Get.new(uri)
+                  else
+                    UI.user_error!("Unsupported HTTP method: #{method}")
+                  end
+
+        request["x-api-token"] = token
+        request["Content-Type"] = "application/json" if body
+        request.body = body.to_json if body
+
+        http.request(request)
+      end
 
       #####################################################
       # @!group Documentation
@@ -136,29 +188,61 @@ module Fastlane
                                        verify_block: proc do |value|
                                           UI.user_error! "Language codes should be passed as array" unless value.kind_of? Array
                                        end),
-            FastlaneCore::ConfigItem.new(key: :include_comments,
+          FastlaneCore::ConfigItem.new(key: :include_comments,
                                        description: "Include comments in exported files",
                                        optional: true,
                                        is_string: false,
                                        default_value: false,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Include comments should be true or false" unless [true, false].include? value
+                                          UI.user_error! "Include comments should be true or false" unless [true, false].include? value
                                        end),
-            FastlaneCore::ConfigItem.new(key: :use_original,
+          FastlaneCore::ConfigItem.new(key: :use_original,
                                        description: "Use original filenames/formats (bundle_structure parameter is ignored then)",
                                        optional: true,
                                        is_string: false,
                                        default_value: false,
                                        verify_block: proc do |value|
-                                         UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
-                                        end),
-            FastlaneCore::ConfigItem.new(key: :tags,
-                                        description: "Include only the keys tagged with a given set of tags",
-                                        optional: true,
-                                        is_string: false,
-                                        verify_block: proc do |value|
+                                          UI.user_error! "Use original should be true of false." unless [true, false].include?(value)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :tags,
+                                       description: "Include only the keys tagged with a given set of tags",
+                                       optional: true,
+                                       is_string: false,
+                                       verify_block: proc do |value|
                                           UI.user_error! "Tags should be passed as array" unless value.kind_of? Array
-                                        end),
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :replace_breaks,
+                                       description: "Replace line breaks with \\n in Lokalise export",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: false,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("replace_breaks must be true or false") unless [true, false].include?(value)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :escape_percent,
+                                       description: "Escape % characters in Lokalise export",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: true,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("escape_percent must be true or false") unless [true, false].include?(value)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :max_retries,
+                                       description: "Maximum number of polling attempts for Lokalise process",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: 60,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("max_retries must be a positive Integer") unless value.is_a?(Integer) && value > 0
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :retry_delay,
+                                       description: "Delay in seconds between polling attempts",
+                                       optional: true,
+                                       is_string: false,
+                                       default_value: 5,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("retry_delay must be a positive Integer") unless value.is_a?(Integer) && value > 0
+                                       end)
 
         ]
       end
